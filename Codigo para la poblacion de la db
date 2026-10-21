@@ -1,9 +1,6 @@
-"""
-Taller 3 - Bases de Datos II
-Caso: triaje de pacientes en IPS
-
+PARTE 2: GENERACION DE DATOS PARALA BASE
 Genera datos de ejemplo (5.500 registros) y los carga en SQL Server.
-Antes de ejecutarlo, corre 01_crear_tablas.sql en SQL Server.
+Antes de ejecutarlo, se debera correr 01_crear_tablas.sql en SQL Server.
 
 Uso:  python 02_poblar_datos.py
 """
@@ -102,6 +99,20 @@ APELLIDOS = ["Gómez", "Rodríguez", "Martínez", "López", "García", "Hernánd
              "Torres", "Díaz", "Vargas", "Castro", "Rojas", "Moreno", "Jiménez", "Ortiz", "Gutiérrez",
              "Restrepo", "Cardona", "Henao", "Zapata", "Ospina", "Mejía", "Londoño", "Giraldo"]
 
+# Diagnósticos plausibles según la categoría del síntoma principal: (leves, graves)
+# Nivel 1 usa los leves, nivel 3 los graves y nivel 2 una mezcla de ambos.
+CATEGORIA_DIAGNOSTICOS = {
+    "Respiratorio": (["J00", "J02.9", "J06.9", "J20.9"], ["J18.9", "J45.9", "J44.9"]),
+    "Cardiovascular": (["R07.4", "I10"], ["I20.9", "I21.9", "I48", "I50.9", "R55"]),
+    "Digestivo": (["A09", "K29.7", "K21.9"], ["K35.8", "K80.2"]),
+    "Neurológico": (["R51", "G43.9"], ["G40.9", "I63.9"]),
+    "General": (["R50.9", "B34.9"], ["A90", "E86"]),
+    "Musculoesquelético": (["M54.5", "M25.5"], ["S52.5", "S93.4"]),
+    "Urinario": (["N39.0"], ["N39.0"]),
+    "Ginecológico": (["N76.0"], ["O20.0", "O47.0"]),
+    "Piel": (["L50.9", "B09"], ["T78.4"]),
+}
+
 # ---------------------------------------------------------------
 # 4. Generación de los datos
 #    Cada fila es una tupla en el mismo orden de las columnas de la tabla.
@@ -187,14 +198,23 @@ espera_por_nivel = {1: (25, 180), 2: (10, 60), 3: (0, 15)}        # minutos de e
 resultados_por_nivel = {1: ["Alta"] * 9 + ["Observacion"],
                         2: ["Alta"] * 6 + ["Observacion"] * 2 + ["Remision", "Hospitalizacion"],
                         3: ["Alta", "Observacion", "Observacion", "Hospitalizacion", "Hospitalizacion", "Remision"]}
-diagnosticos_por_especialidad = {e: [d[0] for d in diagnosticos if d[3] == e] for e in range(1, 11)}
 medico_especialidad = {m[0]: m[4] for m in medicos}
+sintoma_por_id = {s[0]: s for s in sintomas}
+diagnostico_por_codigo = {d[1]: d for d in diagnosticos}
 
 atenciones = []
 for indice in sorted(random.sample(range(N_TRIAJES), N_ATENCIONES)):
     id_triaje, _, id_ips, fecha, _, nivel, _ = triajes[indice]
-    id_medico = random.choice(medicos_por_ips[id_ips])            # un médico de la misma IPS
-    id_diagnostico = random.choice(diagnosticos_por_especialidad[medico_especialidad[id_medico]])
+    # El diagnóstico depende de los síntomas: se parte del síntoma principal (el de mayor alerta)
+    detalle = borradores[indice][6]
+    principal = max(detalle, key=lambda d: (sintoma_por_id[d[0]][3], d[1]))
+    leves, graves = CATEGORIA_DIAGNOSTICOS[sintoma_por_id[principal[0]][2]]
+    codigos = leves if nivel == 1 else graves if nivel == 3 else leves + graves
+    id_diagnostico, _, _, especialidad_dx = diagnostico_por_codigo[random.choice(codigos)]
+    # Atiende un médico de esa especialidad en la misma IPS; si no hay, uno de Medicina General
+    # (el primer médico de cada IPS siempre es de Medicina General)
+    candidatos = [m for m in medicos_por_ips[id_ips] if medico_especialidad[m] == especialidad_dx]
+    id_medico = random.choice(candidatos or [medicos_por_ips[id_ips][0]])
     espera = random.randint(*espera_por_nivel[nivel])
     duracion = random.randint(30, 120) if nivel == 3 else random.randint(10, 45)
     atenciones.append((len(atenciones) + 1, id_triaje, id_medico, id_diagnostico,
