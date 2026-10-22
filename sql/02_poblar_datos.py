@@ -3,24 +3,23 @@ Genera datos de ejemplo (5.500 registros) y los carga en SQL Server.
 Antes de ejecutarlo, se debera correr 01_crear_tablas.sql en SQL Server.
 
 Uso:  python 02_poblar_datos.py
-"""
 import random
 from datetime import datetime, timedelta
 
 import pyodbc
 
-# ---------------------------------------------------------------
-# 1. Configuración de la conexión (cámbiala según tu equipo)
-# ---------------------------------------------------------------
-SERVIDOR = "SM_BUITRAGO"      # o "localhost\\SQLEXPRESS"
+
+# 1. Configuración de la conexión a SQL Server
+
+SERVIDOR = "SM_BUITRAGO"      
 BASE = "TriajeIPS"
 DRIVER = "ODBC Driver 17 for SQL Server"
 USUARIO = None              # None = autenticación de Windows
 CLAVE = None
 
-# ---------------------------------------------------------------
-# 2. Cantidades (suman 5.500 registros)
-# ---------------------------------------------------------------
+
+#2. Cantidades (suman 5.500 registros)
+
 N_PACIENTES = 600
 N_TRIAJES = 1100
 N_ATENCIONES = 990          # el 10 % de los triajes queda sin atención
@@ -30,12 +29,12 @@ N_TRIAJE_SINTOMAS = 2660    # entre 1 y 4 síntomas por triaje
 UMBRAL_URGENTE = 40         # puntaje >= 40  -> nivel 3 (urgente)
 UMBRAL_MEDIO = 20           # puntaje >= 20  -> nivel 2 (media), si no nivel 1 (normal)
 
-random.seed(42)             # así salen los mismos datos cada vez
+random.seed(42)             
 HOY = datetime(2026, 10, 15)
 
-# ---------------------------------------------------------------
+
 # 3. Catálogos (tablas pequeñas)
-# ---------------------------------------------------------------
+
 NOMBRES_EPS = ["EPS Vida Sana", "EPS Nueva Esperanza", "EPS Unisalud", "EPS Bienestar",
                "EPS Cooperativa Salud", "EPS Familia Sana", "EPS Integral",
                "EPS Protección Total", "EPS Mutual Andina", "EPS Salud Capital"]
@@ -113,10 +112,10 @@ CATEGORIA_DIAGNOSTICOS = {
     "Piel": (["L50.9", "B09"], ["T78.4"]),
 }
 
-# ---------------------------------------------------------------
+
 # 4. Generación de los datos
 #    Cada fila es una tupla en el mismo orden de las columnas de la tabla.
-# ---------------------------------------------------------------
+
 eps = [(i + 1, nombre, f"900{random.randint(100000, 999999)}-{random.randint(0, 9)}",
         "Subsidiado" if i % 3 == 0 else "Contributivo")
        for i, nombre in enumerate(NOMBRES_EPS)]
@@ -220,9 +219,9 @@ for indice in sorted(random.sample(range(N_TRIAJES), N_ATENCIONES)):
     atenciones.append((len(atenciones) + 1, id_triaje, id_medico, id_diagnostico,
                        fecha + timedelta(minutes=espera), duracion, random.choice(resultados_por_nivel[nivel])))
 
-# ---------------------------------------------------------------
+
 # 5. Carga en SQL Server (el orden respeta las llaves foráneas)
-# ---------------------------------------------------------------
+
 TABLAS = [
     ("EPS", "id_eps, nombre, nit, regimen", eps),
     ("IPS", "id_ips, nombre, ciudad, direccion, nivel_complejidad, capacidad_urgencias", ips),
@@ -255,9 +254,9 @@ for tabla, columnas, filas in TABLAS:
     cursor.execute(f"SET IDENTITY_INSERT dbo.{tabla} OFF")
 conexion.commit()
 
-# ---------------------------------------------------------------
+
 # 6. Comprobación: filas en SQL Server contra filas generadas
-# ---------------------------------------------------------------
+
 total = 0
 for tabla, _, filas in TABLAS:
     en_base = cursor.execute(f"SELECT COUNT(*) FROM dbo.{tabla}").fetchone()[0]
