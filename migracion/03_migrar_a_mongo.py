@@ -11,9 +11,11 @@ Colecciones resultantes:
 
 Requisitos:  pip install pyodbc pymongo
 Uso:         python 03_migrar_a_mongo.py
+
 ---------------------------------------3
 CODIGO APARTIR DE LA SIGUIENTE LINEA:
 ---------------------------------------3
+
 import random
 from collections import defaultdict
 from datetime import datetime
@@ -21,9 +23,9 @@ from datetime import datetime
 import pyodbc
 from pymongo import MongoClient
 
-# ---------------------------------------------------------------
+
 # 1. Configuración
-# ---------------------------------------------------------------
+
 SERVIDOR = "SM_BUITRAGO"      # o "localhost\\SQLEXPRESS"
 BASE = "TriajeIPS"
 DRIVER = "ODBC Driver 17 for SQL Server"
@@ -33,9 +35,9 @@ CLAVE = None
 MONGO_URI = "mongodb://localhost:27017"
 BASE_MONGO = "TriajeIPS_mongo"
 
-# ---------------------------------------------------------------
+
 # 2. Conexiones
-# ---------------------------------------------------------------
+
 if USUARIO:
     autenticacion = f"UID={USUARIO};PWD={CLAVE};"
 else:
@@ -64,10 +66,10 @@ def a_datetime(fecha):
     return datetime(fecha.year, fecha.month, fecha.day)
 
 
-# ---------------------------------------------------------------
+
 # 3. Transformación: de tablas a documentos
 #    El _id de cada documento es el id que tenía en SQL Server.
-# ---------------------------------------------------------------
+
 
 # --- Catálogos que se referencian: casi iguales a sus tablas ---
 sintomas = [{"_id": f["id_sintoma"], "nombre": f["nombre"], "categoria": f["categoria"],
@@ -146,18 +148,18 @@ for f in leer("SELECT * FROM Triaje ORDER BY id_triaje"):
         documento["atencion"] = atencion_de_triaje[f["id_triaje"]]
     triajes.append(documento)
 
-# ---------------------------------------------------------------
+
 # 4. Carga en MongoDB (se borra lo anterior para poder repetir la migración)
-# ---------------------------------------------------------------
+
 COLECCIONES = {"sintomas": sintomas, "ips": ips, "pacientes": pacientes, "medicos": medicos, "triajes": triajes}
 for nombre, documentos in COLECCIONES.items():
     mongo.drop_collection(nombre)
     mongo[nombre].insert_many(documentos)
     print(f"Colección {nombre:<10} {len(documentos):>5} documentos")
 
-# ---------------------------------------------------------------
+
 # 5. Verificación: ¿los datos pasaron completos y consistentes?
-# ---------------------------------------------------------------
+
 fallos = 0
 
 
