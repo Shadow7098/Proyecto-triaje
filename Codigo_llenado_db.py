@@ -1,4 +1,4 @@
-PARTE 2: GENERACION DE DATOS PARALA BASE
+PARTE 2: GENERACION DE DATOS PARA LA BASE
 Genera datos de ejemplo (5.500 registros) y los carga en SQL Server.
 Antes de ejecutarlo, se debera correr 01_crear_tablas.sql en SQL Server.
 
