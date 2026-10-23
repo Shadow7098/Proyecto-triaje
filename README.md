@@ -41,3 +41,6 @@ reporta sus síntomas, se calcula un puntaje y se asigna un nivel de atención
 
 ![Modelo relacional](modelos/Modelo_relacional.webp)
 ![Modelo documental](modelos/Modelo_documental.webp)
+
+## Diapositivas 
+https://canva.link/ye8r04ls3yns5rr 
